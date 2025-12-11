@@ -1,0 +1,204 @@
+
+## Reactで作るシンプルなTodoアプリ — 指示書
+
+これは学習用のシンプルなTodoアプリをReactで作るための手順書です。目的は最小限の機能でReactの基本（コンポーネント設計、状態管理、イベント処理、基本の永続化）を習得することです。
+
+### 目的
+- Todoの追加、削除、完了トグルができること
+- フィルタ（全て/未完了/完了）を実装すること
+- ローカルストレージに保存してリロード後も復元できること
+
+### 前提条件
+- Node.js (推奨: 16+)
+- npm または yarn
+- 基本的なJavaScript/Reactの知識
+
+### 推奨スタック
+- React 18
+- Vite（高速起動）または Create React App
+- CSSは任意（プレーンCSS、CSS Modules、Tailwindなど）
+
+### プロジェクト作成（Vite例）
+1. プロジェクト作成
+
+	 ```bash
+	 npm create vite@latest my-todo -- --template react
+	 cd my-todo
+	 npm install
+	 npm run dev
+	 ```
+
+2. 開発サーバーが立ち上がったら、以降のファイルを作成/編集します。
+
+### 推奨ファイル構成
+
+```
+my-todo/
+├─ index.html
+├─ package.json
+├─ src/
+│  ├─ main.jsx
+│  ├─ App.jsx
+│  ├─ components/
+│  │  ├─ TodoForm.jsx
+│  │  ├─ TodoList.jsx
+│  │  └─ TodoItem.jsx
+│  ├─ styles/
+│  │  └─ app.css
+│  └─ utils/
+│     └─ storage.js   # localStorageヘルパー
+└─ README.md
+```
+
+### コンポーネント設計（契約）
+
+- App
+	- 役割: 全体の状態（todos配列、フィルタ）を保持し、子コンポーネントに渡す
+	- 入力: なし
+	- 出力: なし
+
+- TodoForm
+	- 役割: 新しいTodoを入力して追加するフォーム
+	- props: onAdd(text: string)
+
+- TodoList
+	- 役割: Todoの配列を受け取りリスト表示する
+	- props: todos, onToggle(id), onDelete(id)
+
+- TodoItem
+	- 役割: 単体のTodo表示。完了トグル・削除ボタンを持つ
+	- props: todo {id, text, completed}, onToggle, onDelete
+
+### データ形状
+
+Todo: {
+	id: string | number,
+	text: string,
+	completed: boolean
+}
+
+### 必要な機能（実装手順）
+1. Appでtodos状態を作る（useState）
+2. TodoFormで入力してonAddを呼ぶ
+3. Appで追加処理を実装（新しいidを生成して配列に追加）
+4. TodoList/TodoItemでonToggle(onDelete)を受け取り、Appのハンドラを呼ぶ
+5. フィルタ機能を実装（'all'|'active'|'completed'）
+6. ローカルストレージにtodosを保存・復元する（useEffect）
+
+### 実装のポイント（コード断片）
+
+- `storage.js`（localStorageヘルパー）
+
+```js
+export const loadTodos = (key = 'todos') => {
+	try {
+		const raw = localStorage.getItem(key)
+		return raw ? JSON.parse(raw) : []
+	} catch (e) {
+		console.error('failed to load todos', e)
+		return []
+	}
+}
+
+export const saveTodos = (todos, key = 'todos') => {
+	try {
+		localStorage.setItem(key, JSON.stringify(todos))
+	} catch (e) {
+		console.error('failed to save todos', e)
+	}
+}
+```
+
+- `App.jsx`（要点）
+
+```jsx
+import React, { useState, useEffect } from 'react'
+import TodoForm from './components/TodoForm'
+import TodoList from './components/TodoList'
+import { loadTodos, saveTodos } from './utils/storage'
+
+export default function App() {
+	const [todos, setTodos] = useState(() => loadTodos())
+	const [filter, setFilter] = useState('all')
+
+	useEffect(() => {
+		saveTodos(todos)
+	}, [todos])
+
+	const addTodo = (text) => {
+		const newTodo = { id: Date.now(), text, completed: false }
+		setTodos((t) => [newTodo, ...t])
+	}
+
+	const toggleTodo = (id) => {
+		setTodos((t) => t.map(todo => todo.id === id ? { ...todo, completed: !todo.completed } : todo))
+	}
+
+	const deleteTodo = (id) => {
+		setTodos((t) => t.filter(todo => todo.id !== id))
+	}
+
+	const filtered = todos.filter(todo =>
+		filter === 'all' ? true : filter === 'active' ? !todo.completed : todo.completed
+	)
+
+	return (
+		<div className="app">
+			<h1>Todo</h1>
+			<TodoForm onAdd={addTodo} />
+			<div className="filters">
+				<button onClick={() => setFilter('all')}>All</button>
+				<button onClick={() => setFilter('active')}>Active</button>
+				<button onClick={() => setFilter('completed')}>Completed</button>
+			</div>
+			<TodoList todos={filtered} onToggle={toggleTodo} onDelete={deleteTodo} />
+		</div>
+	)
+}
+```
+
+- `TodoForm.jsx`（要点）
+
+```jsx
+import React, { useState } from 'react'
+
+export default function TodoForm({ onAdd }) {
+	const [text, setText] = useState('')
+
+	const submit = (e) => {
+		e.preventDefault()
+		if (!text.trim()) return
+		onAdd(text.trim())
+		setText('')
+	}
+
+	return (
+		<form onSubmit={submit}>
+			<input value={text} onChange={e => setText(e.target.value)} placeholder="新しいTodo" />
+			<button type="submit">追加</button>
+		</form>
+	)
+}
+```
+
+- `TodoList.jsx` と `TodoItem.jsx` はシンプルにprops経由で操作を渡します。
+
+### スタイリング
+- 最初は最小限のスタイルでOK。
+- `app.css` に基本の余白、フォント、ボタン/入力の見た目を追加するだけで使いやすくなります。
+
+### 実行とテスト
+- 開発: `npm run dev` (Viteの場合)
+- ビルド: `npm run build`
+- ローカルで簡単に動作確認できれば十分。ユニットテストは任意（Jest/React Testing Library推奨）。
+
+### 拡張アイデア
+- 編集（Edit）機能の追加
+- タグや優先度の導入
+- サーバーサイド永続化（簡易API / Firebaseなど）
+- Undo/RedoやBulk操作（全完了/全削除）
+
+---
+
+この指示書は、そのまま `src` にコードを追加して実装を進められるように設計しています。必要なら、この指示書を基に具体的なファイルを作成してコード実装（自動でファイル作成・テスト追加）まで進めます。どこまで自動で進めるか指示してください。
+
