@@ -12,6 +12,9 @@ export default function App() {
 
   const [filter, setFilter] = useState("all");
 
+  // search query for filtering todos by text
+  const [query, setQuery] = useState("");
+
   // persist todos whenever they change
   useEffect(() => {
     saveTodos(todos);
@@ -42,7 +45,8 @@ export default function App() {
     setTodos((t) => t.filter((todo) => todo.id !== id));
   };
 
-  const filtered = todos.filter((todo) => {
+  // first apply status filter, then text search (case-insensitive)
+  const filteredByStatus = todos.filter((todo) => {
     switch (filter) {
       case "active":
         return !todo.completed;
@@ -54,10 +58,23 @@ export default function App() {
     }
   });
 
+  const filtered = filteredByStatus.filter((todo) =>
+    todo.text.toLowerCase().includes(query.trim().toLowerCase())
+  );
+
   return (
     <div className="app">
       <h1 className="app-title">NovaTasks</h1>
       <TodoForm onAdd={addTodo} />
+
+      <div className="search">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="検索..."
+          aria-label="検索"
+        />
+      </div>
 
       <div className="filters">
         <button
