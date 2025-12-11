@@ -4,15 +4,29 @@ import TodoList from "./components/TodoList";
 import { loadTodos, saveTodos } from "./utils/storage";
 
 export default function App() {
-  const [todos, setTodos] = useState(() => loadTodos());
+  const [todos, setTodos] = useState([]);
+
+  useEffect(() => {
+    setTodos(loadTodos());
+  }, []);
+
   const [filter, setFilter] = useState("all");
 
+  // persist todos whenever they change
   useEffect(() => {
     saveTodos(todos);
   }, [todos]);
 
   const addTodo = (text) => {
-    const newTodo = { id: Date.now(), text, completed: false };
+    // use the browser's crypto API to generate a UUID (no external dependency)
+    const newTodo = {
+      id:
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : String(Date.now()),
+      text,
+      completed: false,
+    };
     setTodos((t) => [newTodo, ...t]);
   };
 
@@ -28,17 +42,21 @@ export default function App() {
     setTodos((t) => t.filter((todo) => todo.id !== id));
   };
 
-  const filtered = todos.filter((todo) =>
-    filter === "all"
-      ? true
-      : filter === "active"
-      ? !todo.completed
-      : todo.completed
-  );
+  const filtered = todos.filter((todo) => {
+    switch (filter) {
+      case "active":
+        return !todo.completed;
+      case "completed":
+        return todo.completed;
+      case "all":
+      default:
+        return true;
+    }
+  });
 
   return (
     <div className="app">
-      <h1>Todo</h1>
+      <h1 className="app-title">NovaTasks</h1>
       <TodoForm onAdd={addTodo} />
 
       <div className="filters">
@@ -65,7 +83,11 @@ export default function App() {
       <TodoList todos={filtered} onToggle={toggleTodo} onDelete={deleteTodo} />
 
       <footer className="footer">
-        <small>{todos.length} items total</small>
+        <small>
+          {todos.length} items total |{" "}
+          {todos.filter((todo) => !todo.completed).length} active |{" "}
+          {todos.filter((todo) => todo.completed).length} completed
+        </small>
       </footer>
     </div>
   );
