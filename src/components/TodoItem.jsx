@@ -6,10 +6,9 @@ export default function TodoItem({ todo, onToggle, onDelete }) {
     const date = new Date(dateString);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const dueDate = new Date(dateString);
-    dueDate.setHours(0, 0, 0, 0);
+    date.setHours(0, 0, 0, 0);
     
-    const isOverdue = dueDate < today && !todo.completed;
+    const isOverdue = date < today && !todo.completed;
     
     return (
       <span className={`due-date ${isOverdue ? "overdue" : ""}`}>
