@@ -48,7 +48,14 @@ h1 {
   gap: 12px;
   margin-bottom: 16px;
 }
-.todo-form input {
+.todo-form input[type="text"] {
+  flex: 2;
+  padding: 14px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+.todo-form input[type="date"] {
   flex: 1;
   padding: 14px 12px;
   border: 1px solid #e5e7eb;
@@ -106,12 +113,26 @@ h1 {
   border-bottom: 1px solid #f3f4f6;
   font-size: 1rem;
 }
-.todo-item .text {
+.todo-item .todo-content {
   margin-left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.todo-item .text {
+  display: block;
 }
 .todo-item.completed .text {
   text-decoration: line-through;
   color: var(--muted);
+}
+.todo-item .due-date {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.todo-item .due-date.overdue {
+  color: #ef4444;
+  font-weight: 500;
 }
 .todo-item label {
   display: flex;

@@ -20,7 +20,7 @@ export default function App() {
     saveTodos(todos);
   }, [todos]);
 
-  const addTodo = (text) => {
+  const addTodo = (text, dueDate) => {
     // use the browser's crypto API to generate a UUID (no external dependency)
     const newTodo = {
       id:
@@ -29,6 +29,7 @@ export default function App() {
           : String(Date.now()),
       text,
       completed: false,
+      dueDate: dueDate || null,
     };
     setTodos((t) => [newTodo, ...t]);
   };
